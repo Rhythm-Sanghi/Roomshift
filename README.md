@@ -27,22 +27,10 @@ Use Node 20.19+ on the 20.x line or Node 22.12+.
 
 ```sh
 npm ci
-npm test
-npm run build
-npm run preview -- --host 127.0.0.1 --port 4173 --strictPort
+npm run dev
 ```
 
-Open the [local preview](http://127.0.0.1:4173/). For development, use `npm run dev`.
-
-A clean source copy with Node 24.15.0 and npm 11.12.1 passed installation and production build with the lockfile unchanged. The evaluator suite passed **12 tests, with 0 failures and 0 skips**.
-
-## Publish the demo
-
-1. In [repository settings](https://github.com/Rhythm-Sanghi/Roomshift/settings/pages), choose **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-2. Commit the release changes and push them to `main`. [The Pages workflow](.github/workflows/pages.yml) installs from the lockfile, tests, builds with base `/Roomshift/`, and publishes `dist/`. If Pages was enabled after the push, run **Deploy Roomshift to GitHub Pages** from the Actions tab.
-3. After each release, open the [Pages demo](https://rhythm-sanghi.github.io/Roomshift/) signed out and run the outage and custom room walkthroughs.
-
-For a root-path fallback, run `npm ci`, `npm test`, and `npm run build` with the default mode, then upload the resulting `dist/` folder using [Netlify’s drag-and-drop deploy](https://docs.netlify.com/deploy/create-deploys/#drag-and-drop).
+Open the URL printed in the terminal. Run `npm test` to check the evaluator.
 
 ## How Roomshift evaluates a room
 
@@ -57,7 +45,9 @@ The [test cases](tests/evaluationCases.ts) cover exact capacity, optional requir
 
 ## Contributions
 
-- **Rhythm Sanghi** defined the organizer workflow, decision semantics, fictional outage scenario, and design direction.
-- **Codex assistance** implemented the evaluator, workspace, forms, comparison, evidence inspector, types, fictional fixtures, and tests. Codex also verified the build and browser flows and drafted the submission materials.
+**Rhythm Sanghi led the product and design.** He defined the student organizer’s workflow, the rules for qualifying a room and handling missing evidence, the fictional lift-outage scenario, and the visual direction for the comparison and evidence inspector.
+
+**AI-assisted development.** Codex implemented the evaluator and browser app, created the sample data and tests, and assisted with verification and submission drafts.
+
 - **Dependencies** include React and React DOM for the UI, Vite for bundling and preview, TypeScript and React type definitions for type checking, and Node’s built-in test runner. The demo uses fictional observations created for Roomshift.
 - **Pre-existing references** include [Threadmark](https://github.com/Rhythm-Sanghi/Threadmark) and [Benchlight](https://github.com/Rhythm-Sanghi/Benchlight). Their interaction and visual patterns informed the design. Roomshift uses its own code and assets. There are no external datasets or sponsor integrations.
