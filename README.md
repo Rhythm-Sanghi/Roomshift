@@ -8,7 +8,7 @@ Roomshift helps student organizers keep campus events accessible after a last-mi
 
 ![Roomshift’s computed outage comparison. Forum 204 becomes ineligible, Forum Annex qualifies through the West lift, and Commons 106 remains unverified. The Annex inspector shows the access survey and West lift report.](docs/roomshift-outage.jpg)
 
-## One-minute judge walkthrough
+## Try the demo
 
 | Time | Try this |
 | --- | --- |
@@ -38,7 +38,7 @@ A clean source copy with Node 24.15.0 and npm 11.12.1 passed installation and pr
 
 ## Publish the demo
 
-1. In [repository settings](https://github.com/Rhythm-Sanghi/Roomshift/settings/pages), choose **Settings → Pages → Build and deployment → Source → GitHub Actions**.
+1. In the GitHub repository, choose **Settings → Pages → Build and deployment → Source → GitHub Actions**. [GitHub Pages setup](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-with-a-custom-github-actions-workflow)
 2. Commit the release changes and push them to `main`. [The Pages workflow](.github/workflows/pages.yml) installs from the lockfile, tests, builds with base `/Roomshift/`, and publishes `dist/`. If Pages was enabled after the push, run **Deploy Roomshift to GitHub Pages** from the Actions tab.
 3. After each release, open the [Pages demo](https://rhythm-sanghi.github.io/Roomshift/) signed out and run the outage and custom room walkthroughs.
 

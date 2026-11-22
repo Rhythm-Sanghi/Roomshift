@@ -9,3 +9,4 @@ coverage/
 *.local
 *.pem
 *.key
+/.private/
