@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import type { Observation, RoomFacts, StepFreeRoute } from './roomFacts';
 
 type RouteChoice = 'unverified' | 'none' | 'direct' | 'elevator';
@@ -18,6 +18,7 @@ type RoomFormProps = {
 
 export function RoomForm({ room, elevator, onSave, onCancel }: RoomFormProps) {
   const [error, setError] = useState('');
+  const formId = useId();
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +50,7 @@ export function RoomForm({ room, elevator, onSave, onCancel }: RoomFormProps) {
 
     function observation<T>(suffix: string, value: T | null, previous?: Observation<T> | null) {
       if (value === null) return null;
-      if (!enteredSource && previous?.value === value) return previous;
+      if (previous?.value === value) return previous;
       return { id: id + '-' + suffix, value, source };
     }
 
@@ -64,8 +65,8 @@ export function RoomForm({ room, elevator, onSave, onCancel }: RoomFormProps) {
   }
 
   return (
-    <form className="room-form" onSubmit={save} aria-labelledby="room-form-title">
-      <h3 id="room-form-title">{room ? 'Edit room' : 'Add a room'}</h3>
+    <form className="room-form" onSubmit={save} aria-labelledby={formId + '-title'}>
+      <h3 id={formId + '-title'}>{room ? 'Edit room' : 'Add a room'}</h3>
       <div className="room-fields">
         <label>Room name<input name="name" autoFocus defaultValue={room?.name} required maxLength={80} /></label>
         <label>Location<input name="location" defaultValue={room?.location} maxLength={120} /></label>
@@ -85,9 +86,12 @@ export function RoomForm({ room, elevator, onSave, onCancel }: RoomFormProps) {
             <option value="elevator">Verified route via {elevator.label}</option>
           </select>
         </label>
-        <label><span>Source for observations <span className="optional">(optional)</span></span>
-          <input name="source" placeholder="e.g. Facilities room inventory" maxLength={120} />
-        </label>
+        <div>
+          <label><span>Source for new or changed facts <span className="optional">(optional)</span></span>
+            <input name="source" aria-describedby={formId + '-source-help'} placeholder="e.g. Facilities room inventory" maxLength={120} />
+          </label>
+          <p className="source" id={formId + '-source-help'}>Applies to seat count, projector, or route changes. Unchanged facts keep their sources.</p>
+        </div>
       </div>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="actions"><button type="submit" className="primary">Save room</button><button type="button" onClick={onCancel}>Cancel</button></div>

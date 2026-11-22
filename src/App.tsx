@@ -4,7 +4,7 @@ import { RoomForm } from './RoomForm';
 import { blankInputs, example, exampleElevator, exampleWestElevator } from './example';
 import { evaluateRoom } from './evaluation/evaluateRoom';
 import type { RoomEvaluation, RoomStatus } from './evaluation/contract';
-import type { EventRequirements, RoomFacts, RoomInputs, ServiceStatus } from './roomFacts';
+import type { EventRequirements, RoomFacts, RoomInputs, RouteAvailability, ServiceStatus } from './roomFacts';
 
 const customElevator = { id: 'shared-elevator', label: 'Shared elevator' };
 const exampleElevators = [exampleElevator, exampleWestElevator];
@@ -51,6 +51,16 @@ function routeLabel(room: RoomFacts, result: RoomEvaluation) {
   return routes.some(route => route.elevatorId === null) ? 'Direct entry' : 'Via elevator';
 }
 
+function citedExampleLift(result: RoomEvaluation, availability: RouteAvailability) {
+  const routeCheck = result.evidence.find(check => check.requirement === 'step-free' && check.status === 'met');
+  if (!routeCheck) return undefined;
+
+  return exampleElevators.find(({ id }) => {
+    const report = availability[id];
+    return report?.value === 'available' && routeCheck.observationIds.includes(report.id);
+  });
+}
+
 function NoQualifyingRooms({ results }: { results: readonly RoomEvaluation[] }) {
   if (!results.length || results.some(result => result.status === 'qualifies')) return null;
   const failed = results.filter(result => result.status === 'ineligible').length;
@@ -67,11 +77,56 @@ function NoQualifyingRooms({ results }: { results: readonly RoomEvaluation[] }) 
 }
 
 export function App() {
-  const [inputs, setInputs] = useState<RoomInputs>(example);
   const [exampleMode, setExampleMode] = useState(true);
-  const [formRevision, setFormRevision] = useState(0);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(example.rooms[0]?.id);
-  const [roomEditor, setRoomEditor] = useState<{ room: RoomFacts | null } | null>(null);
+  const [exampleRevision, setExampleRevision] = useState(0);
+  const [resetAnnouncement, setResetAnnouncement] = useState('');
+  const resetDialog = useRef<HTMLDialogElement>(null);
+
+  function resetExample() {
+    resetDialog.current?.close();
+    setExampleRevision(revision => revision + 1);
+    setResetAnnouncement('Fictional example reset.');
+  }
+
+  return (
+    <>
+      <a className="skip-link" href={exampleMode ? '#workspace' : '#custom-workspace'}>Skip to workspace</a>
+      <header className="app-header">
+        <div className="header-inner">
+          <strong className="brand"><span className="brand-mark" aria-hidden="true" />Roomshift</strong>
+          <div className="actions" role="group" aria-label="Workspace">
+            <button className={exampleMode ? 'primary' : undefined} aria-pressed={exampleMode} onClick={() => setExampleMode(true)}>View example</button>
+            <button className={exampleMode ? undefined : 'primary'} aria-pressed={!exampleMode} onClick={() => setExampleMode(false)}>Use my rooms</button>
+            {exampleMode && <button onClick={() => resetDialog.current?.showModal()}>Reset example</button>}
+          </div>
+        </div>
+      </header>
+      <dialog ref={resetDialog} className="reset-dialog" aria-labelledby="reset-dialog-title">
+        <h2 id="reset-dialog-title">Reset the fictional example?</h2>
+        <p>This discards edits to the example. Your custom rooms and drafts stay available.</p>
+        <form method="dialog" className="actions">
+          <button autoFocus>Keep edits</button>
+          <button type="button" onClick={resetExample}>Reset fictional example</button>
+        </form>
+      </dialog>
+      <Workspace key={exampleRevision} exampleMode active={exampleMode} />
+      <Workspace exampleMode={false} active={!exampleMode} />
+      <div className="sr-only" role="status">{resetAnnouncement}</div>
+    </>
+  );
+}
+
+// Keep both workspaces mounted so switching also preserves unfinished form edits.
+function Workspace({ exampleMode, active }: { exampleMode: boolean; active: boolean }) {
+  const initialInputs = exampleMode ? example : blankInputs;
+  const workspaceId = exampleMode ? 'workspace' : 'custom-workspace';
+  const evidenceId = exampleMode ? 'room-evidence' : 'custom-room-evidence';
+  const eventHeadingId = workspaceId + '-event';
+  const comparisonHeadingId = workspaceId + '-comparison';
+  const baselineId = workspaceId + '-baseline';
+  const [inputs, setInputs] = useState<RoomInputs>(initialInputs);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(initialInputs.rooms[0]?.id);
+  const [roomEditor, setRoomEditor] = useState<{ room: RoomFacts | null } | null>(exampleMode ? null : { room: null });
   const [announcement, setAnnouncement] = useState('');
   const addRoomButton = useRef<HTMLButtonElement>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
@@ -88,17 +143,6 @@ export function App() {
   const serviceChanged = exampleMode && elevators.some(candidate =>
     inputs.availability[candidate.id]?.id !== example.availability[candidate.id]?.id,
   );
-
-  function reset(useExample: boolean) {
-    const next = useExample ? example : blankInputs;
-    setExampleMode(useExample);
-    setInputs(next);
-    setSelectedRoomId(next.rooms[0]?.id);
-    setRoomEditor(useExample ? null : { room: null });
-    editorTrigger.current = null;
-    setFormRevision(revision => revision + 1);
-    setAnnouncement(useExample ? 'Fictional example loaded.' : 'Custom workspace opened.');
-  }
 
   function updateRequirements(requirements: EventRequirements) {
     setInputs(current => ({ ...current, requirements }));
@@ -143,26 +187,15 @@ export function App() {
   }
 
   return (
-    <>
-      <a className="skip-link" href="#workspace">Skip to workspace</a>
-      <header className="app-header">
-        <div className="header-inner">
-          <strong className="brand"><span className="brand-mark" aria-hidden="true" />Roomshift</strong>
-          <div className="actions">
-            <button className="primary" onClick={() => reset(true)}>Load example</button>
-            <button onClick={() => reset(false)}>Use my rooms</button>
-          </div>
-        </div>
-      </header>
-      <main id="workspace" tabIndex={-1}>
+      <main id={workspaceId} tabIndex={-1} hidden={!active}>
         <div className="page-heading">
           <h1>Compare replacement rooms</h1>
           <p>Check room evidence against what your event needs.</p>
         </div>
 
-        <section className="event-panel" aria-labelledby="event-heading">
-          <div className="section-bar"><h2 id="event-heading">Event requirements</h2></div>
-          <RequirementsForm key={formRevision} requirements={inputs.requirements} onSave={updateRequirements} />
+        <section className="event-panel" aria-labelledby={eventHeadingId}>
+          <div className="section-bar"><h2 id={eventHeadingId}>Event requirements</h2></div>
+          <RequirementsForm requirements={inputs.requirements} onSave={updateRequirements} />
           {elevators.map(candidate => {
             const service = inputs.availability[candidate.id];
             const original = exampleMode ? example.availability[candidate.id] : undefined;
@@ -188,20 +221,20 @@ export function App() {
           <strong>{exampleMode ? 'Fictional example' : 'Custom input'}</strong>
           <p>{exampleMode
             ? 'Set the North lift out of service, then select a room to inspect the evidence behind its result.'
-            : 'Select a room to inspect how its supplied observations meet the event requirements.'}</p>
+            : 'Room drafts stay here when you switch workspaces and clear when you reload the page.'}</p>
         </div>
 
         <div className="workspace-grid">
-          <section className="comparison" aria-labelledby="comparison-heading">
+          <section className="comparison" aria-labelledby={comparisonHeadingId}>
             <div className="section-bar">
-              <h2 id="comparison-heading">Room comparison</h2>
+              <h2 id={comparisonHeadingId}>Room comparison</h2>
               <button ref={addRoomButton} onClick={event => { editorTrigger.current = event.currentTarget; setRoomEditor({ room: null }); }}>Add room</button>
             </div>
             {roomEditor && <RoomForm key={roomEditor.room?.id ?? 'new'} room={roomEditor.room} elevator={elevator} onSave={saveRoom} onCancel={closeEditor} />}
             <NoQualifyingRooms results={evaluatedRooms.map(({ evaluation }) => evaluation)} />
-            {serviceChanged && <p id="baseline-description" className="comparison-note muted">The baseline uses the original lift reports with the current room facts and event requirements.</p>}
+            {serviceChanged && <p id={baselineId} className="comparison-note muted">The baseline uses the original lift reports with the current room facts and event requirements.</p>}
             {inputs.rooms.length > 0 ? (
-              <table className={serviceChanged ? 'before-and-after' : undefined} aria-describedby={serviceChanged ? 'baseline-description' : undefined}>
+              <table className={serviceChanged ? 'before-and-after' : undefined} aria-describedby={serviceChanged ? baselineId : undefined}>
                 <thead>
                   <tr>
                     <th scope="col">Room</th>
@@ -214,6 +247,10 @@ export function App() {
                   {evaluatedRooms.map(({ room, evaluation: result }) => {
                     const before = serviceChanged ? evaluateRoom(room, inputs.requirements, example.availability) : undefined;
                     const changed = before !== undefined && before.status !== result.status;
+                    const beforeLift = before?.status === 'qualifies' && result.status === 'qualifies'
+                      ? citedExampleLift(before, example.availability)
+                      : undefined;
+                    const currentLift = beforeLift && citedExampleLift(result, inputs.availability);
                     return (
                       <tr key={room.id} className={selectedRoomId === room.id ? 'selected' : undefined}>
                         <th scope="row">
@@ -224,7 +261,12 @@ export function App() {
                           {room.location && <span className="room-location">{room.location}</span>}
                           <span className="room-location">{room.seats ? <><span className="numeric">{room.seats.value}</span> seats</> : 'Seats unverified'}</span>
                         </th>
-                        <td className="route-summary">{routeLabel(room, result)}</td>
+                        <td className="route-summary">
+                          {routeLabel(room, result)}
+                          {beforeLift && currentLift && beforeLift.id !== currentLift.id && (
+                            <span className="outcome-change">Route changed · {beforeLift.label} → {currentLift.label}</span>
+                          )}
+                        </td>
                         {before && <td className="previous-status"><span className={'status ' + before.status}>{resultLabels[before.status]}</span></td>}
                         <td>
                           <span className={'status ' + result.status}>{resultLabels[result.status]}</span>
@@ -237,17 +279,16 @@ export function App() {
                 </tbody>
               </table>
             ) : !roomEditor && <p className="empty-inspector">Add a replacement room and enter the observations you can verify.</p>}
-            {selectedRoom && <a className="evidence-link" href="#room-evidence">View selected room evidence</a>}
+            {selectedRoom && <a className="evidence-link" href={'#' + evidenceId}>View selected room evidence</a>}
           </section>
-          <EvidenceInspector room={selectedRoom} availability={inputs.availability} evaluation={selection?.evaluation} onEdit={() => {
+          <EvidenceInspector id={evidenceId} room={selectedRoom} availability={inputs.availability} evaluation={selection?.evaluation} onEdit={() => {
             if (!selectedRoom) return;
             const focused = document.activeElement;
             editorTrigger.current = focused instanceof HTMLButtonElement ? focused : null;
             setRoomEditor({ room: selectedRoom });
           }} />
         </div>
+        <div className="sr-only" role="status">{announcement}</div>
       </main>
-      <div className="sr-only" role="status">{announcement}</div>
-    </>
   );
 }

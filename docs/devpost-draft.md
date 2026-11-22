@@ -14,7 +14,7 @@ Load the fictional campus and mark the **North lift** out of service. Based on t
 
 Remove the West lift report and the Annex becomes **Unverified**. Set the West lift back to **Available**, then raise attendance from 30 to 45. The Annex becomes **Ineligible** because it has 42 seats, even though its West lift route still meets the access requirement. The same evaluator handles manually entered rooms.
 
-**Demo** [Verified public URL pending]. The [local setup and one-minute walkthrough](../README.md) reproduce the verified build. **Source repository** [Rhythm-Sanghi/Roomshift](https://github.com/Rhythm-Sanghi/Roomshift). **Video** [Recording URL pending].
+**Demo** [Open Roomshift](https://rhythm-sanghi.github.io/Roomshift/). The [local setup and one-minute walkthrough](../README.md) are available as a fallback. **Source repository** [Rhythm-Sanghi/Roomshift](https://github.com/Rhythm-Sanghi/Roomshift). **Video** [Recording URL pending].
 
 ## The problem
 

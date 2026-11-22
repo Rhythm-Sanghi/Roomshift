@@ -27,28 +27,38 @@ function ObservationLine({ observation, value }: {
   );
 }
 
-export function EvidenceInspector({ room, availability, evaluation, onEdit }: {
+export function EvidenceInspector({ id, room, availability, evaluation, onEdit }: {
+  id: string;
   room: RoomFacts | undefined;
   availability: RouteAvailability;
   evaluation: RoomEvaluation | undefined;
   onEdit: () => void;
 }) {
   const routes = room?.stepFreeRoutes;
+  const projectorValue = room?.projector ? (room.projector.value ? 'Present' : 'Absent') : 'Unverified';
+  const routeValue = routes ? (routes.value.map(route => route.label).join(' · ') || 'No step-free route') : 'Unverified';
   const elevatorRoutes = new Map<string, string>();
   for (const route of routes?.value ?? []) {
     if (route.elevatorId && !elevatorRoutes.has(route.elevatorId)) {
       elevatorRoutes.set(route.elevatorId, route.label);
     }
   }
-  const observations = new Map<string, string>();
-  const serviceObservations = [...elevatorRoutes.keys()].map(id => availability[id] ?? null);
-  for (const fact of [room?.seats, room?.projector, routes, ...serviceObservations]) {
-    if (fact) observations.set(fact.id, fact.source);
+  const observations = new Map<string, { value: string; source: string }>();
+  function recordObservation(observation: Observation<unknown> | null | undefined, value: string) {
+    if (observation) observations.set(observation.id, { value, source: observation.source });
+  }
+
+  if (room?.seats) recordObservation(room.seats, room.seats.value + ' seats');
+  recordObservation(room?.projector, 'Projector ' + projectorValue.toLowerCase());
+  recordObservation(routes, routeValue);
+  for (const [id, label] of elevatorRoutes) {
+    const report = availability[id];
+    recordObservation(report, label + ' · ' + serviceLabel(report?.value));
   }
 
   return (
-    <aside id="room-evidence" tabIndex={-1} className="inspector" aria-labelledby="inspector-heading">
-      <div className="section-bar"><h2 id="inspector-heading">Evidence inspector</h2></div>
+    <aside id={id} tabIndex={-1} className="inspector" aria-labelledby={id + '-heading'}>
+      <div className="section-bar"><h2 id={id + '-heading'}>Evidence inspector</h2></div>
       {room ? (
         <>
           <div className="inspector-title">
@@ -65,13 +75,15 @@ export function EvidenceInspector({ room, availability, evaluation, onEdit }: {
                     <p>{check.explanation}</p>
                     {check.observationIds.length > 0 && (
                       <ul className="citations" aria-label="Cited observations">
-                        {check.observationIds.map(id => (
-                          <li key={id}>
-                            <code>{id}</code>
-                            {room.seats?.id === id && <> · {room.seats.value} seats</>}
-                            {observations.has(id) && <> · {observations.get(id)}</>}
-                          </li>
-                        ))}
+                        {check.observationIds.map(observationId => {
+                          const observation = observations.get(observationId);
+                          return (
+                            <li key={observationId}>
+                              {observation && <><strong>{observation.value}</strong> · {observation.source}</>}
+                              <span className="citation-id">ID · <code>{observationId}</code></span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </li>
@@ -83,8 +95,8 @@ export function EvidenceInspector({ room, availability, evaluation, onEdit }: {
             <h4>Recorded observations</h4>
             <dl className="facts">
               <div className="fact-pair"><dt>Seats</dt><dd><ObservationLine observation={room.seats} value={room.seats ? String(room.seats.value) : 'Unverified'} /></dd></div>
-              <div className="fact-pair"><dt>Projector</dt><dd><ObservationLine observation={room.projector} value={room.projector ? (room.projector.value ? 'Present' : 'Absent') : 'Unverified'} /></dd></div>
-              <div className="fact-pair"><dt>Step-free route</dt><dd><ObservationLine observation={routes ?? null} value={routes ? (routes.value.map(route => route.label).join(' · ') || 'No step-free route') : 'Unverified'} /></dd></div>
+              <div className="fact-pair"><dt>Projector</dt><dd><ObservationLine observation={room.projector} value={projectorValue} /></dd></div>
+              <div className="fact-pair"><dt>Step-free route</dt><dd><ObservationLine observation={routes ?? null} value={routeValue} /></dd></div>
               {[...elevatorRoutes].map(([id, label]) => (
                 <div className="fact-pair" key={id}>
                   <dt>Elevator service<span className="service-route">{label}</span></dt>
