@@ -86,7 +86,7 @@ export function App() {
     inputs.rooms.some(room => room.stepFreeRoutes?.value.some(route => route.elevatorId === candidate.id)),
   );
   const serviceChanged = exampleMode && elevators.some(candidate =>
-    inputs.availability[candidate.id]?.value !== example.availability[candidate.id]?.value,
+    inputs.availability[candidate.id]?.id !== example.availability[candidate.id]?.id,
   );
 
   function reset(useExample: boolean) {
@@ -107,14 +107,13 @@ export function App() {
 
   function updateService(changedElevator: { id: string; label: string }, value: ServiceStatus | '') {
     const { id, label } = changedElevator;
-    const previousReport = inputs.availability[id] ?? (exampleMode ? example.availability[id] : undefined);
     const nextInputs = {
       ...inputs,
       availability: {
         ...inputs.availability,
         [id]: value ? {
-          id: previousReport?.id ?? id + '-status',
-          source: previousReport?.source ?? 'Organizer service report',
+          id: exampleMode ? id + '-scenario-override' : id + '-organizer-report',
+          source: exampleMode ? 'Organizer scenario override' : 'Organizer service report',
           value,
         } : undefined,
       },
@@ -176,8 +175,10 @@ export function App() {
                   <option value="out-of-service">Out of service</option>
                   <option value="">Unverified — no report</option>
                 </select>
-                {original && service?.value !== original.value && <span className="change-note"><strong>Changed</strong> · {serviceLabel(original.value)} → {serviceLabel(service?.value)}</span>}
                 {service && <span className="source">Source · {service.source}</span>}
+                {original && service?.id !== original.id && (
+                  <span className="change-note"><strong>Baseline</strong> · {serviceLabel(original.value)} · {original.source}</span>
+                )}
               </div>
             );
           })}

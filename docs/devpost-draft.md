@@ -10,11 +10,11 @@ Help student organizers keep campus events accessible after a last-minute venue 
 
 ## Try the demo
 
-Load the fictional campus and mark the **North lift** out of service. Based on the supplied evidence, Forum 204 loses its only documented step-free route, while Forum Annex still qualifies through the **West lift**. Select the Annex to see the access survey and the lift service report behind that result. Commons 106 stays **Unverified** because it has no route survey.
+Load the fictional campus and mark the **North lift** out of service. Based on the supplied evidence, Forum 204 loses its only documented step-free route and cites the organizer’s scenario override. Forum Annex still qualifies through the **West lift**. Select the Annex to see the access survey and the lift service report behind that result. Commons 106 stays **Unverified** because it has no route survey.
 
-Remove the West lift report and the Annex becomes **Unverified**. Restore it, then raise attendance from 30 to 45. The Annex becomes **Ineligible** because it has 42 seats, even though its West lift route still meets the access requirement. The same evaluator handles manually entered rooms.
+Remove the West lift report and the Annex becomes **Unverified**. Set the West lift back to **Available**, then raise attendance from 30 to 45. The Annex becomes **Ineligible** because it has 42 seats, even though its West lift route still meets the access requirement. The same evaluator handles manually entered rooms.
 
-**Demo** [Public URL pending]. The [local setup and one-minute walkthrough](../README.md) reproduce the verified build. **Source repository** [Public repository URL pending]. **Video** [Recording URL pending].
+**Demo** [Verified public URL pending]. The [local setup and one-minute walkthrough](../README.md) reproduce the verified build. **Source repository** [Rhythm-Sanghi/Roomshift](https://github.com/Rhythm-Sanghi/Roomshift). **Video** [Recording URL pending].
 
 ## The problem
 
